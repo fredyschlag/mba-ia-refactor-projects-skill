@@ -9,6 +9,8 @@ Você vai atuar como um auditor de arquitetura de software: primeiro entende o p
 
 As 3 fases são **sequenciais e não podem ser puladas ou reordenadas**. A Fase 2 tem um portão de confirmação humana que é o coração deste processo: a IA nunca deve modificar arquivos de produção sem que a pessoa tenha visto o relatório e explicitamente concordado em prosseguir.
 
+As 3 fases não só imprimem seus resultados na conversa — elas também geram e complementam, nesta ordem, um único arquivo `reports/audit-report.md` (criado na raiz do projeto auditado). Cada fase adiciona sua própria seção a esse arquivo, sempre seguindo **exatamente** os templates definidos nos arquivos de referência (rótulos estruturais em inglês, como no enunciado do desafio) — nunca invente um formato próprio nem traduza os rótulos.
+
 Os arquivos de referência ficam em `references/` — leia cada um no momento indicado abaixo, não tudo de uma vez no início (eles existem justamente para não inflar o contexto da fase errada):
 
 - `references/01-analise-projeto.md` — leia **na Fase 1**: heurísticas de detecção de linguagem/framework/banco/domínio/arquitetura.
@@ -26,6 +28,7 @@ Objetivo: entender o projeto o suficiente para guiar as fases seguintes, sem ain
 1. Leia `references/01-analise-projeto.md` e siga as heurísticas para detectar linguagem, framework (+ versão), banco de dados, domínio da aplicação e nível de organização atual.
 2. Liste os arquivos-fonte analisados (excluindo dependências/artefatos: `node_modules/`, `venv/`, `__pycache__/`, arquivos `.db` gerados, `tests/`/`test/` já existentes — eles entram na auditoria de qualidade de teste se relevante, mas não contam como "código de produção").
 3. Imprima o resumo estruturado exatamente no formato descrito no final daquele arquivo de referência.
+4. Crie `reports/audit-report.md` (criando a pasta `reports/` se não existir) com uma seção `## Phase 1 — Project Analysis` contendo esse mesmo bloco.
 
 Não pule para a Fase 2 sem imprimir esse resumo — ele é o que permite ao usuário perceber rapidamente se a stack foi mal identificada antes de você investir tempo auditando na direção errada.
 
@@ -36,8 +39,9 @@ Objetivo: produzir um relatório objetivo e verificável de anti-patterns, **sem
 1. Leia `references/02-catalogo-anti-patterns.md`.
 2. Percorra o código de fato (não infira a partir do resumo da Fase 1) cruzando contra o catálogo. Abra os arquivos, confirme os números de linha reais, e só registre um apontamento quando ele for verificável no código — não force uma contagem mínima inventando problemas.
 3. Para apontamentos de segurança (SQL Injection, credenciais hardcoded, senha em texto plano, autenticação decorativa), é aceitável e recomendado demonstrar o problema concretamente antes de escrever a recomendação (ex: montar mentalmente o payload que exploraria a injeção, ou conferir que o "hash" de duas entradas parecidas colide) — isso deixa a descrição do apontamento muito mais forte do que uma suposição genérica.
-4. Leia `references/03-template-relatorio-auditoria.md` e `references/05-playbook-refatoracao.md` e escreva o relatório **exatamente** naquele formato, com apontamentos ordenados CRITICAL → LOW. Ao preencher a "Recomendação" de cada apontamento, cite o padrão de transformação correspondente do playbook (ex: "ver padrão 3 — parametrizar a query com bind params") em vez de uma recomendação genérica — você vai aplicar esse mesmo padrão de fato na Fase 3, então nomeá-lo agora já deixa claro o que vai mudar.
-5. Pare aqui. Imprima o relatório completo na conversa e pergunte explicitamente: `Fase 2 concluída. Deseja prosseguir com a refatoração (Fase 3)? [y/n]`
+4. Leia `references/03-template-relatorio-auditoria.md` e `references/05-playbook-refatoracao.md` e escreva o relatório **exatamente** naquele formato, com apontamentos ordenados CRITICAL → LOW. Ao preencher o campo `Recommendation:` de cada apontamento, cite o padrão de transformação correspondente do playbook (ex: "ver padrão 3 — parametrizar a query com bind params") em vez de uma recomendação genérica — você vai aplicar esse mesmo padrão de fato na Fase 3, então nomeá-lo agora já deixa claro o que vai mudar.
+5. Append esse relatório a `reports/audit-report.md` (criado na Fase 1) como uma seção `## Phase 2 — Architecture Audit Report`.
+6. Pare aqui. Imprima o relatório completo na conversa e pergunte explicitamente, com esse texto literal: `Phase 2 complete. Proceed with refactoring (Phase 3)? [y/n]`
 
    **Isto é um portão de decisão humana, não uma formalidade.** Aguarde a resposta do usuário nesta conversa antes de tocar em qualquer arquivo do projeto. Se a resposta for negativa ou ambígua, pare e pergunte o que o usuário gostaria de ajustar no relatório — não prossiga por conta própria assumindo consentimento.
 
@@ -75,5 +79,7 @@ Validation
   ✓/✗ <N>/<N> anti-patterns from the audit report resolved
 ================================
 ```
+
+7. Append esse resultado a `reports/audit-report.md` como uma seção `## Phase 3 — Refactoring Complete`, fechando o mesmo arquivo que a Fase 1 abriu e a Fase 2 complementou.
 
 Se algum item da validação falhar, não declare a Fase 3 concluída — corrija e valide de novo. Se algum apontamento do relatório ficou intencionalmente sem correção, diga isso explicitamente aqui em vez de simplesmente omitir do resumo.
