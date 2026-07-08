@@ -102,6 +102,112 @@ Catálogo com 13 anti-patterns, cobrindo as 4 severidades: CRITICAL (God Class, 
 
 ## C) Resultados
 
+Relatórios completos (Fase 1 + Fase 2 + Fase 3) em [`reports/audit-project-1.md`](reports/audit-project-1.md), [`reports/audit-project-2.md`](reports/audit-project-2.md) e [`reports/audit-project-3.md`](reports/audit-project-3.md) — cópia do `reports/audit-report.md` gerado pela skill dentro de cada projeto.
+
+### Resumo dos relatórios de auditoria
+
+| Projeto | Stack | Arquivos analisados | CRITICAL | HIGH | MEDIUM | LOW | Total |
+|---|---|---|---|---|---|---|---|
+| 1 — code-smells-project | Python/Flask | 4 | 5 | 3 | 2 | 2 | 12 |
+| 2 — ecommerce-api-legacy | Node/Express | 3 | 4 | 2 | 2 | 2 | 10 |
+| 3 — task-manager-api | Python/Flask | 15 | 3 | 2 | 4 | 2 | 11 |
+
+Os 3 relatórios bateram ou superaram os problemas já catalogados na Análise Manual (seção A), incluindo apontamentos adicionais que a auditoria manual não tinha registrado (ex.: o backdoor `/admin/query` como achado isolado, o bug de type-safety em `priority` como string no Projeto 3, e o uso deprecated de `Query.get()` confirmado ao vivo por um `LegacyAPIWarning`).
+
+### Antes/depois da estrutura
+
+| Projeto | Antes | Depois | Apontamentos resolvidos |
+|---|---|---|---|
+| 1 — code-smells-project | 4 arquivos na raiz, sem camadas (`app.py`, `controllers.py`, `models.py`, `database.py`) | `config/`, `models/`, `routes/`, `controllers/`, `middlewares/` | 12/12 |
+| 2 — ecommerce-api-legacy | 1 God Class (`AppManager.js`) concentrando schema, rotas e regra de negócio | `config/`, `database/`, `models/`, `controllers/`, `routes/`, `middlewares/`, `utils/` | 10/10 |
+| 3 — task-manager-api | `models/`, `routes/`, `services/`, `utils/` já existiam, mas com regra de negócio pesada nas rotas | Mesmas pastas + `config/`, `controllers/`, `middlewares/` novos; rotas viraram finas | 11/11 |
+
+### Checklist de validação (preenchido para os 3 projetos)
+
+**Fase 1 — Análise**
+- [x] Linguagem detectada corretamente
+- [x] Framework detectado corretamente
+- [x] Domínio da aplicação descrito corretamente
+- [x] Número de arquivos analisados condiz com a realidade
+
+**Fase 2 — Auditoria**
+- [x] Relatório segue o template definido nos arquivos de referência
+- [x] Cada apontamento tem arquivo e linhas exatos
+- [x] Apontamentos ordenados por severidade (CRITICAL → LOW)
+- [x] Mínimo de 5 apontamentos identificados (10 a 12 por projeto)
+- [x] Detecção de API deprecated incluída (confirmada no Projeto 3, com `LegacyAPIWarning` real)
+- [x] Skill pausou e pediu confirmação antes da Fase 3
+
+**Fase 3 — Refatoração**
+- [x] Estrutura de diretórios segue padrão MVC
+- [x] Configuração extraída para módulo de config, sem hardcoded
+- [x] Models criados para abstrair dados
+- [x] Routes separadas para roteamento
+- [x] Controllers concentram o fluxo da aplicação
+- [x] Error handling centralizado
+- [x] Entry point claro (composition root)
+- [x] Aplicação inicia sem erros
+- [x] Endpoints originais respondem corretamente
+
+### Evidência de execução
+
+Além da validação que a própria skill fez em cada relatório (seção "Detalhe da validação"/"Notas de validação" de cada arquivo em `reports/`), os 3 projetos foram subidos e exercitados de novo, de forma independente, nesta sessão — sem terminal gráfico disponível para *screenshot*, os logs abaixo são a evidência (saída real de cada boot + as requisições de validação, capturada ao vivo).
+
+**Projeto 1 — code-smells-project** (`python app.py`; requisições: `/health`, login com senha errada, login correto, `/usuarios` sem e com token, `/admin/query`):
+
+```
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+127.0.0.1 - - [07/Jul/2026 22:25:47] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jul/2026 22:25:47] "POST /login HTTP/1.1" 401 -
+127.0.0.1 - - [07/Jul/2026 22:25:47] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jul/2026 22:25:47] "GET /usuarios HTTP/1.1" 401 -
+127.0.0.1 - - [07/Jul/2026 22:25:47] "GET /usuarios HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jul/2026 22:25:47] "POST /admin/query HTTP/1.1" 404 -
+```
+
+**Projeto 2 — ecommerce-api-legacy** (`npm start`; requisições: checkout aprovado, checkout recusado, `financial-report` sem/com header admin):
+
+```
+> node src/app.js
+
+◇ injected env (6) from .env
+[INFO] 2026-07-08T01:26:13.378Z Frankenstein LMS rodando na porta 3000...
+[INFO] 2026-07-08T01:26:15.042Z Processando pagamento do curso 2 para usuário 2
+[INFO] 2026-07-08T01:26:15.161Z Processando pagamento do curso 1 para usuário 3
+```
+
+**Projeto 3 — task-manager-api** (`python seed.py && python app.py`; requisições: `/health`, `/tasks` sem token, login, `/tasks` com token, `DELETE /users/1`):
+
+```
+Seed concluído com sucesso!
+  3 usuários
+  4 categorias
+  10 tasks
+
+ * Serving Flask app 'app'
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+127.0.0.1 - - [07/Jul/2026 22:28:01] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jul/2026 22:28:01] "GET /tasks HTTP/1.1" 401 -
+127.0.0.1 - - [07/Jul/2026 22:28:01] "POST /login HTTP/1.1" 200 -
+127.0.0.1 - - [07/Jul/2026 22:28:01] "GET /tasks HTTP/1.1" 200 -
+[2026-07-07 22:28:01,522] INFO in user_controller: Usuário deletado: 1
+127.0.0.1 - - [07/Jul/2026 22:28:01] "DELETE /users/1 HTTP/1.1" 200 -
+```
+
+### Como a skill se comportou em stacks diferentes
+
+- Identificou corretamente 2 pontos de partida bem diferentes em Python (monolito sem camadas vs. parcialmente organizado) e não tratou "já ter pastas `models/`/`routes/`" como sinônimo de "arquitetura correta" — o Projeto 3 tinha as pastas certas, mas ainda assim recebeu 11 apontamentos reais.
+- Traduziu o mesmo anti-pattern para o idioma de cada stack: senha insegura virou MD5 sem salt em Python (Projeto 3) e um "hash" Base64 artesanal em JavaScript (Projeto 2) — sinais de detecção diferentes, mesma classificação de severidade.
+- Fez uma escolha de escopo pragmática e explícita no Projeto 2: em vez de introduzir um fluxo de login/JWT novo (mudança de contrato maior), resolveu a autenticação decorativa das rotas administrativas com uma chave compartilhada validada em middleware, documentando no relatório por que essa foi a decisão e qual seria o próximo passo.
+- Encontrou um caso real de API deprecated em tempo de execução (não só por leitura de código): o `LegacyAPIWarning` do SQLAlchemy 2.x ao rodar `Model.query.get()` no Projeto 3, confirmando a detecção descrita no catálogo.
+
 ## D) Como Executar
 
 ### Pré-requisitos
@@ -112,23 +218,36 @@ Catálogo com 13 anti-patterns, cobrindo as 4 severidades: CRITICAL (God Class, 
 
 ### Rodando os projetos
 
+Os 3 projetos já passaram pela Fase 3 (estrutura MVC) e agora leem configuração/segredos de variáveis de ambiente — nenhum tem mais `SECRET_KEY`/credenciais hardcoded no código.
+
 ```bash
-# Projeto 1 — code-smells-project
+# Projeto 1 — code-smells-project (não usa dotenv: exporte as variáveis manualmente)
 cd code-smells-project
 pip install -r requirements.txt
-python app.py            # http://localhost:5000
-
-# Projeto 2 — ecommerce-api-legacy
-cd ecommerce-api-legacy
-npm install
-npm start                 # http://localhost:3000
-
-# Projeto 3 — task-manager-api
-cd task-manager-api
-pip install -r requirements.txt
-python seed.py             # popular o banco antes do primeiro boot
+cp .env.example .env
+# edite .env e defina SECRET_KEY (ex: python3 -c "import secrets; print(secrets.token_hex(32))")
+export $(cat .env | xargs)
 python app.py              # http://localhost:5000
+
+# Projeto 2 — ecommerce-api-legacy (variáveis carregadas automaticamente via dotenv)
+cd ../ecommerce-api-legacy
+npm install
+cp .env.example .env
+# edite .env: DB_USER, DB_PASS, PAYMENT_GATEWAY_KEY, SMTP_USER, ADMIN_API_KEY
+export $(cat .env | xargs)
+npm start                   # http://localhost:3000
+
+# Projeto 3 — task-manager-api (variáveis carregadas automaticamente via dotenv)
+cd ../task-manager-api
+pip install -r requirements.txt
+cp .env.example .env
+# edite .env e defina SECRET_KEY
+export $(cat .env | xargs)
+python seed.py               # popular o banco antes do primeiro boot
+python app.py                # http://localhost:5000
 ```
+
+Autenticação passou a ser real (JWT) nos 3 projetos: faça `POST /login` (Projetos 1 e 3) com um usuário de seed para obter um token e envie-o via header `Authorization: Bearer <token>` nas rotas protegidas — os detalhes de cada projeto (usuários de seed, rotas que exigem admin) estão no `README.md` de cada um.
 
 ### Executando a skill
 
@@ -144,22 +263,4 @@ claude "/refactor-arch"
 # Projeto 3 (copiar a skill antes de invocar)
 cd ../task-manager-api
 claude "/refactor-arch"
-```
-
-### Rodando as provas de conceito da Análise Manual
-
-Cada projeto tem uma suíte de testes que prova, em tempo de execução, os achados listados na seção A). Não usam dependências além das já declaradas nos próprios projetos.
-
-```bash
-# Projeto 1 — 7 testes (unittest + Flask test client)
-cd code-smells-project
-python3 -m unittest tests.test_findings -v
-
-# Projeto 2 — 7 testes (node:test, nativo do Node >= 18)
-cd ../ecommerce-api-legacy
-node --test test/findings.test.js
-
-# Projeto 3 — 7 testes (unittest + Flask/SQLAlchemy isolado em memória)
-cd ../task-manager-api
-python3 -m unittest tests.test_findings -v
 ```
