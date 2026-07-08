@@ -74,6 +74,32 @@ Prova de conceito automatizada de todos os achados: [`task-manager-api/tests/tes
 
 ## B) Construção da Skill
 
+### Decisões de design
+
+- `SKILL.md` orquestra as 3 fases em menos de 90 linhas e não repete conhecimento de domínio — só aponta para o arquivo de referência certo em cada fase (progressive disclosure).
+- 5 arquivos em `references/` cobrem as 5 áreas de conhecimento exigidas: análise de projeto, catálogo de anti-patterns, template de relatório, guidelines de MVC e playbook de refatoração.
+- As 3 fases geram e complementam um único `reports/audit-report.md` por projeto, em vez de só imprimir no chat.
+- O template do relatório usa rótulos estruturais fixos em inglês (`Summary`, `Findings`, `File:`, `Description:`, `Impact:`, `Recommendation:`) com conteúdo em português.
+- A confirmação da Fase 2 é tratada como decisão humana explícita na conversa, não como permissão de ferramenta.
+- A skill tem uma única fonte fora do controle de versão, replicada para os 3 projetos por um script — as 3 cópias commitadas nunca divergem entre si.
+
+### Anti-patterns incluídos
+
+Catálogo com 13 anti-patterns, cobrindo as 4 severidades: CRITICAL (God Class, SQL Injection, credenciais hardcoded, hashing de senha ausente ou quebrado), HIGH (autenticação decorativa, lógica de negócio no Controller, estado global mutável), MEDIUM (queries N+1, validação duplicada, erros silenciados, APIs deprecated) e LOW (magic numbers, nomenclatura ruim/logging via print). Cada item generaliza um problema real confirmado na Análise Manual (seção A) — não são hipotéticos.
+
+### Como garantiu que a skill é agnóstica de tecnologia
+
+- Detecção de stack por evidência (manifesto, imports, DDL, nomes de tabela/rota), não por regra fixa por framework.
+- Sinais de anti-pattern descritos como padrões estruturais, não como sintaxe de uma linguagem específica.
+- Exemplos do playbook alternam Python/Flask e Node/Express de propósito, com instrução explícita para adaptar em vez de copiar.
+- Validada na prática: um smoke test (subagente com acesso só à skill) identificou stack, domínio e apontamentos corretamente sem nenhuma dica prévia.
+
+### Dificuldades encontradas
+
+- O playbook só era lido na Fase 3, mas o relatório da Fase 2 já precisava citar o padrão de transformação aplicável — corrigido lendo o playbook também na Fase 2.
+- Uma primeira versão do template traduziu os rótulos estruturais para português; corrigido para usar os rótulos em inglês esperados.
+- Um script de reformatação de texto chegou a corromper o frontmatter YAML do `SKILL.md` ao juntar linhas indevidamente; identificado na revisão e corrigido antes de qualquer execução real.
+
 ## C) Resultados
 
 ## D) Como Executar
